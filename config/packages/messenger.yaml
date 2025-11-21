@@ -1,0 +1,33 @@
+framework:
+    messenger:
+        failure_transport: failed
+
+        transports:
+            # Transport asynchrone principal (Redis)
+            async:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                retry_strategy:
+                    max_retries: 3
+                    delay: 1000
+                    multiplier: 2
+                    max_delay: 0
+                
+            # Transport synchrone (en mémoire - exécution immédiate)
+            sync:
+                dsn: 'sync://'
+                
+            # Dead Letter Queue (Doctrine)
+            failed:
+                dsn: 'doctrine://default?queue_name=failed'
+
+        routing:
+            'App\Message\PlaceOrderMessage': sync
+            'App\Message\ProcessPaymentMessage': async
+            'App\Message\SendConfirmationEmailMessage': async
+
+        buses:
+            messenger.bus.default:
+                middleware:
+                    - 'App\Middleware\TimingMiddleware'
+                    - validation
+                    - doctrine_transaction
